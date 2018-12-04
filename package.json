@@ -1,0 +1,30 @@
+{
+  "name": "install",
+  "version": "0.0.1",
+  "description": "Inquirer script to install bcoin, bcash, hsd and bpanel",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pinheadmz/install.git"
+  },
+  "keywords": [
+    "bcoin",
+    "bcash",
+    "hsd",
+    "bitcoin",
+    "handshake",
+    "bpanel"
+  ],
+  "author": "Matthew Zipkin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pinheadmz/install/issues"
+  },
+  "homepage": "https://github.com/pinheadmz/install#readme",
+  "dependencies": {
+    "inquirer": "^6.2.1"
+  }
+}
