@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/pinheadmz/install#readme",
   "dependencies": {
+    "bcrypto": "^3.0.1",
     "inquirer": "^6.2.1"
   }
 }
