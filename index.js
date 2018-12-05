@@ -174,7 +174,7 @@ let options = {};
 
   console.log('\nDownloading from GitHub: ' + options.library + '...');
 
-  child_process.spawnSync(
+  await spawnAsyncPrint(
     'git',
     ['clone', libs[options.library].repo],
     {cwd: pathLibs}
@@ -183,7 +183,7 @@ let options = {};
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\nDownloading from GitHub: bPanel...');
   
-    child_process.spawnSync(
+    await spawnAsyncPrint(
       'git',
       ['clone', libs['bpanel'].repo],
       {cwd: pathLibs}
@@ -196,7 +196,7 @@ let options = {};
 
   console.log('\nInstalling: ' + options.library + '...');
 
-  child_process.spawnSync(
+  await spawnAsyncPrint(
     'npm',
     ['install'],
     {cwd: Path.join(pathLibs, options.library)}
@@ -205,7 +205,7 @@ let options = {};
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\nInstalling: bPanel...');
 
-    child_process.spawnSync(
+    await spawnAsyncPrint(
       'npm',
       ['install'],
       {cwd: Path.join(pathLibs, 'bpanel')}
@@ -230,26 +230,22 @@ let options = {};
     console.log('\nRunning: bPanel...');
 
     const prefix = '--prefix=' + Path.join(pathData, 'bpanel');
-    child_process.spawnSync(
+    await spawnAsyncPrint(
       'npm',
-      ['run', 'start', '--', prefix],
+      ['run', 'start:poll', '--', prefix],
       {cwd: Path.join(pathLibs, 'bpanel')}
     );
 
     console.log('\nOpening bPanel: HIT REFRESH UNTIL IT WORKZ');
 
     // THIS ONLY WORKS ON OSX
-    child_process.spawnSync(
-      'open',
-      ['http://localhost:5000'],
-    );
+    //child_process.spawnSync(
+     // 'open',
+     // ['http://localhost:5000'],
+    //);
   }
 
 })();
-
-
-
-
 
 
 // UTILITY
@@ -280,4 +276,24 @@ function configFileFromObject(obj) {
     output += '\n';
   }
   return output;
+}
+
+async function spawnAsyncPrint(cmd, arg, opt) {
+  return new Promise ((resolve, reject) => {
+
+    const proc = child_process.spawn(cmd, arg, opt);
+
+    proc.stdout.on('data', (data) => {
+      console.log('    ', data.toString());
+    });
+
+
+    proc.stderr.on('data', (data) => {
+      console.log('    ', data.toString());
+    });
+
+    proc.on('close', (code) => {
+      resolve(code);
+    });
+});
 }
