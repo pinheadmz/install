@@ -168,7 +168,6 @@ let options = {};
   fs.copyFileSync('lib/config.js', Path.join(pathBpanel, 'config.js'));
   // TODO: need to get wallet token and insert it, after node and wallet are up
 
-
   /**
    * DOWNLOAD LIBRARIES
    */
@@ -191,6 +190,60 @@ let options = {};
     );
   }
 
+  /**
+   * NPM INSTALL
+   */
+
+  console.log('\nInstalling: ' + options.library + '...');
+
+  child_process.spawnSync(
+    'npm',
+    ['install'],
+    {cwd: Path.join(pathLibs, options.library)}
+  );
+
+  if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
+    console.log('\nInstalling: bPanel...');
+
+    child_process.spawnSync(
+      'npm',
+      ['install'],
+      {cwd: Path.join(pathLibs, 'bpanel')}
+    );
+  }
+
+  /**
+   * RUN THE PROGRAMS!!
+   */
+
+  console.log('\nRunning: ' + options.library + '...');
+
+  const prefix = '--prefix=' + Path.join(pathData, options.library);
+  const spv = options.node === 'spv' ? '--spv' : null;
+  child_process.spawnSync(
+    options.library,
+    ['--daemon', spv, prefix],
+    {cwd: Path.join(pathLibs, options.library, 'bin')}
+  );
+
+  if (options.bpanel){
+    console.log('\nRunning: bPanel...');
+
+    const prefix = '--prefix=' + Path.join(pathData, 'bpanel');
+    child_process.spawnSync(
+      'npm',
+      ['run', 'start', '--', prefix],
+      {cwd: Path.join(pathLibs, 'bpanel')}
+    );
+
+    console.log('\nOpening bPanel: HIT REFRESH UNTIL IT WORKZ');
+
+    // THIS ONLY WORKS ON OSX
+    child_process.spawnSync(
+      'open',
+      ['http://localhost:5000'],
+    );
+  }
 
 })();
 
