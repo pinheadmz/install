@@ -23,11 +23,13 @@ const libs = {
     chain: 'handshake'
   },
   bpanel: {
-    repo: 'https://github.com/bpanel-org/bpanel',
+    repo: 'https://github.com/bpanel-org/bpanel'
   }
 };
 
 const {
+  path,
+  menu,
   lib,
   node,
   bpanel
@@ -45,9 +47,37 @@ let options = {};
   const defaultPath = Path.join(__dirname, 'app');
   options = { defaultPath: defaultPath };
 
+  const pathAnswers = await inquirer.prompt(path(options));
+  options = { ...options, ...pathAnswers };
+
+  // Create app directory and subdirs
+  const pathApp = options.path
+  const pathLibs = Path.join(pathApp, 'libs');
+  const pathData = Path.join(pathApp, 'data');
+  makeIfNone(pathApp);
+  makeIfNone(pathLibs);
+  makeIfNone(pathData);
+
+  options.installedLibs = listDir(pathLibs);
+/*
+  // Something is installed or running, awhat are we doing now?
+  if (options.installedLibs.length > 0 || options.running.length > 0) {
+
+    console.log('\n***\nInstalled: ' + JSON.stringify(options.installedLibs));
+    console.log('Running: ' + JSON.stringify(options.running) + '\n***\n');
+
+    const runnable = [];
+    for (const proc of options.installedLibs) {
+      if (options.running.indexOf(proc) === -1)
+        runnable.push(proc);
+    }
+
+    const action = await inquirer.prompt(menu());
+
+  }
+*/
   const libAnswers = await inquirer.prompt(lib(options));
   options = { ...options, ...libAnswers };
-  options.installedLibs = listDir(Path.join(options.path, 'libs'));  
 
   const nodeAnswers = await inquirer.prompt(node(options));
   options = { ...options, ...nodeAnswers };
@@ -55,28 +85,18 @@ let options = {};
   const bpanelAnswers = await inquirer.prompt(bpanel(options));
   options = { ...options, ...bpanelAnswers };
 
-  // Create app directory and subdirs
-  const pathApp = options.path
-  const pathLibs = Path.join(pathApp, 'libs');
-  const pathPIDLocks = Path.join(pathApp, 'pidlocks');
-  const pathData = Path.join(pathApp, 'data');
-  makeIfNone(pathApp);
-  makeIfNone(pathLibs);
-  makeIfNone(pathPIDLocks);
-  makeIfNone(pathData);
-
   /**
    * WRITE CONF FILES
    */
 
-   console.log('\nWriting configuration files...');
+   console.log('\n***\nWriting configuration files...\n***\n');
 
   // note: SPV is not a valid config file option, but we'll use it internally
   const libOpts = {
     api_key: bcrypto.random.randomBytes(32).toString('hex'),
     network: options.network,
     prune: options.node === 'prune',
-    spv: options.node === 'spv',
+    spv: options.node === 'SPV',
     wallet_auth: true
   };
   const walletOpts = {
@@ -129,50 +149,58 @@ let options = {};
     confString
   );
 
-  // create directory for this lib's network
+  // create directory for this lib's network -- main will just stay empty unused
   const pathThisNetwork = Path.join(pathThisData, options.network);
   makeIfNone(pathThisNetwork);
 
   // print wallet conf file -- maybe it never gets used but here it is
   const walletConfString = configFileFromObject(walletOpts);
+  const walletPath =
+    options.network === 'main' ? pathThisData : pathThisNetwork;
   fs.writeFileSync(
-    Path.join(pathThisNetwork, 'wallet.conf'),
+    Path.join(walletPath, 'wallet.conf'),
     walletConfString
   );  
 
-  // create directory for bpanel
-  const pathBpanel = Path.join(pathData, 'bpanel');
-  const pathBpanelClients = Path.join(pathBpanel, 'clients');
-  makeIfNone(pathBpanel);
-  makeIfNone(pathBpanelClients);
+  if (options.bpanel) {
+    // create directory for bpanel
+    const pathBpanel = Path.join(pathData, 'bpanel');
+    const pathBpanelClients = Path.join(pathBpanel, 'clients');
+    makeIfNone(pathBpanel);
+    makeIfNone(pathBpanelClients);
 
-  // print bpanel client conf file -- maybe we never use it but here it is
-  const bPanelOpts = {
-    api_key: libOpts.api_key,
-    wallet_api_key: walletOpts.api_key,
-    network: libOpts.network,
-    chain: libs[options.library].chain
-  };
+    // print bpanel client conf file
+    const bPanelOpts = {
+      api_key: libOpts.api_key,
+      wallet_api_key: walletOpts.api_key,
+      network: libOpts.network,
+      chain: libs[options.library].chain
+    };
 
-  if (conflict) {
-    bPanelOpts.port = libOpts.http_port;
-    bPanelOpts.wallet_port = walletOpts.http_port;
+    if (conflict) {
+      bPanelOpts.port = libOpts.http_port;
+      bPanelOpts.wallet_port = walletOpts.http_port;
+    }
+
+    const bpanelConfString = configFileFromObject(bPanelOpts);
+    fs.writeFileSync(
+      Path.join(pathBpanelClients, options.library + '.conf'),
+      bpanelConfString
+    );
+    // TODO: this is just a hard-coded plugin list
+    fs.copyFileSync('lib/config.js', Path.join(pathBpanel, 'config.js'));
+    // TODO: need to get wallet token and insert it, after node and wallet are up
   }
-
-  const bpanelConfString = configFileFromObject(bPanelOpts);
-  fs.writeFileSync(
-    Path.join(pathBpanelClients, options.library + '.conf'),
-    bpanelConfString
-  );
-  // TODO: this is just a hard-coded plugin list
-  fs.copyFileSync('lib/config.js', Path.join(pathBpanel, 'config.js'));
-  // TODO: need to get wallet token and insert it, after node and wallet are up
 
   /**
    * DOWNLOAD LIBRARIES
    */
 
-  console.log('\nDownloading from GitHub: ' + options.library + '...');
+  console.log(
+    '\n***\nDownloading from GitHub: ' +
+    options.library +
+    '...\n***\n'
+  );
 
   await spawnAsyncPrint(
     'git',
@@ -181,7 +209,7 @@ let options = {};
   );
 
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
-    console.log('\nDownloading from GitHub: bPanel...');
+    console.log('\n***\nDownloading from GitHub: bPanel...\n***\n');
   
     await spawnAsyncPrint(
       'git',
@@ -194,7 +222,7 @@ let options = {};
    * NPM INSTALL
    */
 
-  console.log('\nInstalling: ' + options.library + '...');
+  console.log('\n***\nInstalling: ' + options.library + '...\n***\n');
 
   await spawnAsyncPrint(
     'npm',
@@ -203,7 +231,7 @@ let options = {};
   );
 
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
-    console.log('\nInstalling: bPanel...');
+    console.log('\n***\nInstalling: bPanel...\n***\n');
 
     await spawnAsyncPrint(
       'npm',
@@ -216,35 +244,41 @@ let options = {};
    * RUN THE PROGRAMS!!
    */
 
-  console.log('\nRunning: ' + options.library + '...');
+  console.log('\n***\nRunning: ' + options.library + '...\n***\n');
 
   const prefix = '--prefix=' + Path.join(pathData, options.library);
-  const spv = options.node === 'spv' ? '--spv' : null;
-  child_process.spawnSync(
+  const spv = options.node === 'SPV' ? '--spv' : null;
+  const libProc = child_process.spawn(
     options.library,
     ['--daemon', spv, prefix],
-    {cwd: Path.join(pathLibs, options.library, 'bin')}
+    {
+      cwd: Path.join(pathLibs, options.library, 'bin'),
+      detached: true
+    }
   );
 
-  if (options.bpanel){
-    console.log('\nRunning: bPanel...');
+  /*
+  if (options.running.indexOf('bpanel') > 0) {
+    console.log('\n***\nbPanel is already running\n***\n');
+  } else 
+
+  */
+  if (options.bpanel) {
+    console.log('\n***\nRunning: bPanel...\n***\n');
 
     const prefix = '--prefix=' + Path.join(pathData, 'bpanel');
-    await spawnAsyncPrint(
+    const bpanelProc = child_process.spawn(
       'npm',
       ['run', 'start:poll', '--', prefix],
-      {cwd: Path.join(pathLibs, 'bpanel')}
+      {
+        cwd: Path.join(pathLibs, 'bpanel'),
+        detached: true,
+        stdio: 'inherit'
+      }
     );
-
-    console.log('\nOpening bPanel: HIT REFRESH UNTIL IT WORKZ');
-
-    // THIS ONLY WORKS ON OSX
-    //child_process.spawnSync(
-     // 'open',
-     // ['http://localhost:5000'],
-    //);
   }
 
+  process.exit();
 })();
 
 
@@ -258,8 +292,11 @@ function makeIfNone(path) {
 function listDir(path) {
   let list = [];
   if (fs.existsSync(path)) {
-    list = fs.readdirSync(path);
+    const readDir = fs.readdirSync(path);
+    for (const dirItem of readDir)
+      if (dirItem[0] !== '.') list.push(dirItem);
   }
+
   return list;
 }
 
@@ -280,7 +317,6 @@ function configFileFromObject(obj) {
 
 async function spawnAsyncPrint(cmd, arg, opt) {
   return new Promise ((resolve, reject) => {
-
     const proc = child_process.spawn(cmd, arg, opt);
 
     proc.stdout.on('data', (data) => {
@@ -295,5 +331,5 @@ async function spawnAsyncPrint(cmd, arg, opt) {
     proc.on('close', (code) => {
       resolve(code);
     });
-});
+  });
 }
