@@ -1,8 +1,7 @@
-#!/usr/bin/env node
 
 'use strict'
 
-const bcrypto = require('bcrypto');
+const crypto = require('crypto');
 const Path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -93,14 +92,14 @@ let options = {};
 
   // note: SPV is not a valid config file option, but we'll use it internally
   const libOpts = {
-    api_key: bcrypto.random.randomBytes(32).toString('hex'),
+    api_key: crypto.randomBytes(32).toString('hex'),
     network: options.network,
     prune: options.node === 'prune',
     spv: options.node === 'SPV',
     wallet_auth: true
   };
   const walletOpts = {
-    api_key: bcrypto.random.randomBytes(32).toString('hex')
+    api_key: crypto.randomBytes(32).toString('hex')
   };
 
   const conflict =
@@ -272,13 +271,11 @@ let options = {};
       ['run', 'start:poll', '--', prefix],
       {
         cwd: Path.join(pathLibs, 'bpanel'),
-        detached: true,
+        detached: false,
         stdio: 'inherit'
       }
     );
   }
-
-  process.exit();
 })();
 
 

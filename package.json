@@ -4,7 +4,8 @@
   "description": "Inquirer script to install bcoin, bcash, hsd and bpanel",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode production"
   },
   "repository": {
     "type": "git",
@@ -25,7 +26,14 @@
   },
   "homepage": "https://github.com/pinheadmz/install#readme",
   "dependencies": {
-    "bcrypto": "^3.0.1",
-    "inquirer": "^6.2.1"
+    "husky": "^1.2.0",
+    "inquirer": "^6.2.1",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run build"
+    }
   }
 }
