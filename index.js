@@ -249,7 +249,7 @@ let options = {};
   const prefix = '--prefix=' + Path.join(pathData, options.library);
   const spv = options.node === 'SPV' ? '--spv' : null;
   const libProc = child_process.spawn(
-    options.library,
+    './' + options.library,
     ['--daemon', spv, prefix],
     {
       cwd: Path.join(pathLibs, options.library, 'bin'),
