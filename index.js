@@ -19,7 +19,8 @@ const libs = {
   },
   hsd: {
     repo: 'https://github.com/handshake-org/hsd',
-    chain: 'handshake'
+    chain: 'handshake',
+    commit: '7f6e6ba277f43011fa873338fa693e85d4e3a907'
   },
   bpanel: {
     repo: 'https://github.com/bpanel-org/bpanel'
@@ -219,6 +220,14 @@ let options = {};
     ['clone', libs[options.library].repo],
     {cwd: pathLibs}
   );
+
+  if (libs[options.library].commit) {
+    await spawnAsyncPrint(
+      'git',
+      ['checkout', libs[options.library].commit],
+      {cwd: Path.join(pathLibs, options.library)}
+    );
+  }
 
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\n***\nDownloading from GitHub: bPanel...\n***\n');
