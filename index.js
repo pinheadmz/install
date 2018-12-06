@@ -26,6 +26,19 @@ const libs = {
   }
 };
 
+const defaultBpanelConfig = `
+module.exports = {
+  plugins: [
+    "@bpanel/genesis-theme",
+    "@bpanel/price-widget",
+    "@bpanel/recent-blocks",
+    "@bpanel/simple-wallet",
+    "@bpanel/connection-manager"
+  ],
+  localPlugins: []
+};
+`;
+
 const {
   path,
   menu,
@@ -186,8 +199,8 @@ let options = {};
       Path.join(pathBpanelClients, options.library + '.conf'),
       bpanelConfString
     );
-    // TODO: this is just a hard-coded plugin list
-    fs.copyFileSync('lib/config.js', Path.join(pathBpanel, 'config.js'));
+
+    fs.writeFileSync(Path.join(pathBpanel, 'config.js'), defaultBpanelConfig);
     // TODO: need to get wallet token and insert it, after node and wallet are up
   }
 
