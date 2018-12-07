@@ -23,7 +23,8 @@ const libs = {
     commit: '7f6e6ba277f43011fa873338fa693e85d4e3a907'
   },
   bpanel: {
-    repo: 'https://github.com/bpanel-org/bpanel'
+    repo: 'https://github.com/bpanel-org/bpanel',
+    commit: 'current-client-bug'
   }
 };
 
@@ -104,6 +105,8 @@ let options = {};
 
    console.log('\n***\nWriting configuration files...\n***\n');
 
+  // *** NODE *** //
+
   // note: SPV is not a valid config file option, but we'll use it internally
   const libOpts = {
     api_key: crypto.randomBytes(32).toString('hex'),
@@ -162,7 +165,9 @@ let options = {};
     confString
   );
 
-  // create directory for this lib's network -- main will just stay empty unused
+  // *** WALLET *** //
+
+  // create directory for this lib's network-- main will just stay empty unused
   const pathThisNetwork = Path.join(pathThisData, options.network);
   makeIfNone(pathThisNetwork);
 
@@ -171,9 +176,11 @@ let options = {};
   const walletPath =
     options.network === 'main' ? pathThisData : pathThisNetwork;
   fs.writeFileSync(
-    Path.join(pathThisNetwork, 'wallet.conf'),
+    Path.join(walletPath, 'wallet.conf'),
     walletConfString
   );  
+
+  // *** BPANEL *** //
 
   if (options.bpanel) {
     // create directory for bpanel
@@ -187,7 +194,9 @@ let options = {};
       api_key: libOpts.api_key,
       wallet_api_key: walletOpts.api_key,
       network: libOpts.network,
-      chain: libs[options.library].chain
+      chain: libs[options.library].chain,
+      wallet: options.wallet,
+      multisig: false
     };
 
     if (conflict) {
@@ -215,6 +224,7 @@ let options = {};
     '...\n***\n'
   );
 
+  // node
   await spawnAsyncPrint(
     'git',
     ['clone', libs[options.library].repo],
@@ -229,6 +239,7 @@ let options = {};
     );
   }
 
+  // bPanel
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\n***\nDownloading from GitHub: bPanel...\n***\n');
   
@@ -237,6 +248,15 @@ let options = {};
       ['clone', libs['bpanel'].repo],
       {cwd: pathLibs}
     );
+
+
+    if (libs['bpanel'].commit) {
+      await spawnAsyncPrint(
+        'git',
+        ['checkout', libs['bpanel'].commit],
+        {cwd: Path.join(pathLibs, 'bpanel')}
+      );
+    }
   }
 
   /**
