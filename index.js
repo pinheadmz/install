@@ -292,7 +292,7 @@ let options = {};
   args.push('--prefix=' + Path.join(pathData, options.library));
   if (options.node === 'SPV')
     args.push('--spv');
-  if (!options.wallet)
+  if (options.wallet !== 'bwallet')
     args.push('--no-wallet');
 
   const libProc = child_process.spawn(
