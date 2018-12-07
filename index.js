@@ -25,11 +25,14 @@ const libs = {
   bpanel: {
     repo: 'https://github.com/bpanel-org/bpanel',
     commit: 'current-client-bug'
+  },
+  bmultisig: {
+    repo: 'https://github.com/bcoin-org/bmultisig'
   }
 };
 
-const defaultBpanelConfig = `
-module.exports = {
+// will be "module.exports =..."
+const bpanelConfig = {
   plugins: [
     "@bpanel/genesis-theme",
     "@bpanel/price-widget",
@@ -39,7 +42,6 @@ module.exports = {
   ],
   localPlugins: []
 };
-`;
 
 const {
   path,
@@ -105,18 +107,19 @@ let options = {};
 
    console.log('\n***\nWriting configuration files...\n***\n');
 
-  // *** NODE *** //
-
+  // CONF - node
   // note: SPV is not a valid config file option, but we'll use it internally
   const libOpts = {
     api_key: crypto.randomBytes(32).toString('hex'),
     network: options.network,
     prune: options.node === 'prune',
-    spv: options.node === 'SPV',
-    wallet_auth: true
+    spv: options.node === 'SPV'
   };
   const walletOpts = {
-    api_key: crypto.randomBytes(32).toString('hex')
+    api_key: crypto.randomBytes(32).toString('hex'),
+    network: options.network,
+    node_api_key: libOpts.api_key,
+    wallet_auth: false
   };
 
   const conflict =
@@ -152,6 +155,7 @@ let options = {};
         walletOpts.http_port = 18058;
         break;
     }
+    walletOpts.node_port = libOpts.http_port;
   }
 
   // create directory for this lib
@@ -165,23 +169,21 @@ let options = {};
     confString
   );
 
-  // *** WALLET *** //
-
+  // CONF - wallet
   // create directory for this lib's network-- main will just stay empty unused
   const pathThisNetwork = Path.join(pathThisData, options.network);
   makeIfNone(pathThisNetwork);
 
   // print wallet conf file -- maybe it never gets used but here it is
   const walletConfString = configFileFromObject(walletOpts);
-  const walletPath =
+  const pathWallet =
     options.network === 'main' ? pathThisData : pathThisNetwork;
   fs.writeFileSync(
-    Path.join(walletPath, 'wallet.conf'),
+    Path.join(pathWallet, 'wallet.conf'),
     walletConfString
   );  
 
-  // *** BPANEL *** //
-
+  // CONF - bpanel
   if (options.bpanel) {
     // create directory for bpanel
     const pathBpanel = Path.join(pathData, 'bpanel');
@@ -189,14 +191,14 @@ let options = {};
     makeIfNone(pathBpanel);
     makeIfNone(pathBpanelClients);
 
-    // print bpanel client conf file
+    // CLIENT conf file
     const bPanelOpts = {
       api_key: libOpts.api_key,
       wallet_api_key: walletOpts.api_key,
       network: libOpts.network,
       chain: libs[options.library].chain,
-      wallet: options.wallet,
-      multisig: false
+      wallet: options.wallet === 'bwallet',
+      multisig: options.wallet === 'bmultisig'
     };
 
     if (conflict) {
@@ -204,13 +206,21 @@ let options = {};
       bPanelOpts.wallet_port = walletOpts.http_port;
     }
 
-    const bpanelConfString = configFileFromObject(bPanelOpts);
+    const bpanelClientConfString = configFileFromObject(bPanelOpts);
     fs.writeFileSync(
       Path.join(pathBpanelClients, options.library + '.conf'),
-      bpanelConfString
+      bpanelClientConfString
     );
 
-    fs.writeFileSync(Path.join(pathBpanel, 'config.js'), defaultBpanelConfig);
+    // BPANEL conf file
+    const bpanelConfString =
+      'module.exports = ' +
+      JSON.stringify(bpanelConfig).replace(/\"([^(\")"]+)\":/g,"$1:");
+
+    fs.writeFileSync(
+      Path.join(pathBpanel, 'config.js'),
+      bpanelConfString
+    );
     // TODO: need to get wallet token and insert it, after node and wallet are up
   }
 
@@ -218,13 +228,13 @@ let options = {};
    * DOWNLOAD LIBRARIES
    */
 
+  // DOWNLOAD - node
   console.log(
     '\n***\nDownloading from GitHub: ' +
     options.library +
     '...\n***\n'
   );
 
-  // node
   await spawnAsyncPrint(
     'git',
     ['clone', libs[options.library].repo],
@@ -239,7 +249,29 @@ let options = {};
     );
   }
 
-  // bPanel
+  // DOWNLOAD - bmultisig
+  if (
+    options.wallet === 'bmultisig' &&
+    options.installedLibs.indexOf('bmultisig') === -1
+  ) {
+    console.log('\n***\nDownloading from GitHub: bmultisig...\n***\n');
+
+    await spawnAsyncPrint(
+      'git',
+      ['clone', libs['bmultisig'].repo],
+      {cwd: pathLibs}
+    );
+
+    if (libs['bmultisig'].commit) {
+      await spawnAsyncPrint(
+        'git',
+        ['checkout', libs['bmultisig'].commit],
+        {cwd: Path.join(pathLibs, 'bmultisig')}
+      );
+    }
+  }
+
+  // DOWNLOAD - bPanel
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\n***\nDownloading from GitHub: bPanel...\n***\n');
   
@@ -248,7 +280,6 @@ let options = {};
       ['clone', libs['bpanel'].repo],
       {cwd: pathLibs}
     );
-
 
     if (libs['bpanel'].commit) {
       await spawnAsyncPrint(
@@ -263,6 +294,7 @@ let options = {};
    * NPM INSTALL
    */
 
+  // INSTALL - node
   console.log('\n***\nInstalling: ' + options.library + '...\n***\n');
 
   await spawnAsyncPrint(
@@ -271,6 +303,21 @@ let options = {};
     {cwd: Path.join(pathLibs, options.library)}
   );
 
+  // INSTALL - bmultisig
+  if (
+      options.wallet === 'bmultisig' &&
+      options.installedLibs.indexOf('bmultisig') === -1
+    ) {
+      console.log('\n***\nInstalling: bmultisig...\n***\n');
+
+      await spawnAsyncPrint(
+        'npm',
+        ['install'],
+        {cwd: Path.join(pathLibs, 'bmultisig')}
+      );
+    }
+
+  // INSTALL - bpanel
   if (options.bpanel && options.installedLibs.indexOf('bpanel') === -1) {
     console.log('\n***\nInstalling: bPanel...\n***\n');
 
@@ -285,6 +332,7 @@ let options = {};
    * RUN THE PROGRAMS!!
    */
 
+  // RUN - node
   console.log('\n***\nRunning: ' + options.library + '...\n***\n');
 
   const args = [];
@@ -295,7 +343,7 @@ let options = {};
   if (options.wallet !== 'bwallet')
     args.push('--no-wallet');
 
-  const libProc = child_process.spawn(
+  child_process.spawn(
     './' + options.library,
     args,
     {
@@ -304,16 +352,28 @@ let options = {};
     }
   );
 
-  /*
-  if (options.running.indexOf('bpanel') > 0) {
-    console.log('\n***\nbPanel is already running\n***\n');
-  } else 
+  // RUN - bmultisig
+  if (options.wallet === 'bmultisig') {
+    console.log('\n***\nRunning: bmultisig...\n***\n');
 
-  */
+    const BWprefix = '--prefix=' + pathWallet;
+
+    child_process.spawn(
+      './bmultisig',
+      [BWprefix],
+      {
+        cwd: Path.join(pathLibs, 'bmultisig', 'bin'),
+        detached: true,
+      }
+    );
+  }
+
+  // RUN - bpanel
   if (options.bpanel) {
     console.log('\n***\nRunning: bPanel...\n***\n');
 
     const prefix = '--prefix=' + Path.join(pathData, 'bpanel');
+
     const bpanelProc = child_process.spawn(
       'npm',
       ['run', 'start:poll', '--', prefix],
