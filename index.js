@@ -171,7 +171,7 @@ let options = {};
   const walletPath =
     options.network === 'main' ? pathThisData : pathThisNetwork;
   fs.writeFileSync(
-    Path.join(walletPath, 'wallet.conf'),
+    Path.join(pathThisNetwork, 'wallet.conf'),
     walletConfString
   );  
 
@@ -267,12 +267,17 @@ let options = {};
 
   console.log('\n***\nRunning: ' + options.library + '...\n***\n');
 
-  const prefix = '--prefix=' + Path.join(pathData, options.library);
-  const spv = options.node === 'SPV' ? '--spv' : null;
-  const wallet = options.wallet ? null : '--no-wallet';
+  const args = [];
+  args.push('--daemon');
+  args.push('--prefix=' + Path.join(pathData, options.library));
+  if (options.node === 'SPV')
+    args.push('--spv');
+  if (!options.wallet)
+    args.push('--no-wallet');
+
   const libProc = child_process.spawn(
     './' + options.library,
-    ['--daemon', spv, prefix, wallet],
+    args,
     {
       cwd: Path.join(pathLibs, options.library, 'bin'),
       detached: true
