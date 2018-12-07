@@ -20,11 +20,9 @@ const libs = {
   hsd: {
     repo: 'https://github.com/handshake-org/hsd',
     chain: 'handshake',
-    commit: '7f6e6ba277f43011fa873338fa693e85d4e3a907'
   },
   bpanel: {
-    repo: 'https://github.com/bpanel-org/bpanel',
-    commit: 'current-client-bug'
+    repo: 'https://github.com/bpanel-org/bpanel'
   },
   bmultisig: {
     repo: 'https://github.com/bcoin-org/bmultisig'
@@ -119,7 +117,7 @@ let options = {};
     api_key: crypto.randomBytes(32).toString('hex'),
     network: options.network,
     node_api_key: libOpts.api_key,
-    wallet_auth: false
+    wallet_auth: true
   };
 
   const conflict =
@@ -374,16 +372,28 @@ let options = {};
 
     const prefix = '--prefix=' + Path.join(pathData, 'bpanel');
 
-    const bpanelProc = child_process.spawn(
+    await runBpanel(
       'npm',
       ['run', 'start:poll', '--', prefix],
       {
         cwd: Path.join(pathLibs, 'bpanel'),
-        detached: false,
-        stdio: 'inherit'
+        detached: true
       }
     );
   }
+
+  console.log(`
+***
+Okay! bPanel is just about ready.
+Go to http://localhost:5000 in yur browser.
+You may need reload the page in the next minute or so...
+
+Thanks for using EZ installer!
+
+This script will dump some environment variables into this shell:
+***
+  `);
+  process.exit();
 })();
 
 
@@ -420,6 +430,7 @@ function configFileFromObject(obj) {
   return output;
 }
 
+
 async function spawnAsyncPrint(cmd, arg, opt) {
   return new Promise ((resolve, reject) => {
     const proc = child_process.spawn(cmd, arg, opt);
@@ -435,6 +446,36 @@ async function spawnAsyncPrint(cmd, arg, opt) {
 
     proc.on('close', (code) => {
       resolve(code);
+    });
+  });
+}
+
+async function runBpanel(cmd, arg, opt) {
+  return new Promise ((resolve, reject) => {
+    const proc = child_process.spawn(cmd, arg, opt);
+
+    const parseOutput = (string) => {
+
+      const printKeys = ['info', 'error', 'warn', 'Entrypoint'];
+      const chunks = string.split('\n');
+      for (const chunk of chunks) {
+        for (const key of printKeys) {
+          if (chunk.indexOf(key) > 0) {
+            console.log('    ', chunk.substring(0, 120));
+            if (key === 'Entrypoint') {
+              resolve();
+            }
+          }
+        }
+      }
+    };
+
+    proc.stdout.on('data', (data) => {
+      parseOutput(data.toString());
+    });
+
+    proc.stderr.on('data', (data) => {
+      parseOutput(data.toString());
     });
   });
 }
