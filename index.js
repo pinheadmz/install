@@ -173,9 +173,10 @@ let options = {};
   makeIfNone(pathThisNetwork);
 
   // print wallet conf file -- maybe it never gets used but here it is
-  const walletConfString = configFileFromObject(walletOpts);
   const pathWallet =
     options.network === 'main' ? pathThisData : pathThisNetwork;
+  walletOpts.prefix = pathThisData;
+  const walletConfString = configFileFromObject(walletOpts);
   fs.writeFileSync(
     Path.join(pathWallet, 'wallet.conf'),
     walletConfString
