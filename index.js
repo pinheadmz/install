@@ -8,6 +8,8 @@ const os = require('os');
 const child_process = require('child_process');
 const inquirer = require('inquirer');
 
+const DEBUG = true;
+
 const libs = {
   bcoin: {
     repo: 'https://github.com/bcoin-org/bcoin',
@@ -34,8 +36,9 @@ const bpanelConfig = {
   plugins: [
     "@bpanel/genesis-theme",
     "@bpanel/price-widget",
+    "@bpanel/peers-widget",
     "@bpanel/recent-blocks",
-    "@bpanel/simple-wallet",
+    "@bpanel/bwallet",
     "@bpanel/connection-manager"
   ],
   localPlugins: []
@@ -115,8 +118,9 @@ let options = {};
   };
   const walletOpts = {
     api_key: crypto.randomBytes(32).toString('hex'),
-    network: options.network,
+    admin_token: crypto.randomBytes(32).toString('hex'),
     node_api_key: libOpts.api_key,
+    network: options.network,
     wallet_auth: true
   };
 
@@ -194,6 +198,7 @@ let options = {};
     const bPanelOpts = {
       api_key: libOpts.api_key,
       wallet_api_key: walletOpts.api_key,
+      wallet_token: walletOpts.admin_token,
       network: libOpts.network,
       chain: libs[options.library].chain,
       wallet: options.wallet === 'bwallet',
@@ -212,6 +217,9 @@ let options = {};
     );
 
     // BPANEL conf file
+    if (options.network === 'regtest' || options.network === 'simnet')
+      bpanelConfig.plugins.push('@bpanel/simple-mining');
+
     const bpanelConfString =
       'module.exports = ' +
       JSON.stringify(bpanelConfig).replace(/\"([^(\")"]+)\":/g,"$1:");
@@ -379,15 +387,16 @@ let options = {};
       {
         cwd: Path.join(pathLibs, 'bpanel'),
         detached: true
-      }
+      },
+      DEBUG
     );
   }
 
   console.log(`
 ***
 Okay! bPanel is just about ready.
-Go to http://localhost:5000 in yur browser.
-You may need reload the page in the next minute or so...
+Go to http://localhost:5000 in your browser.
+You may need reload the page a few more times in the next minute or so...
 
 Thanks for using EZ installer!
 
@@ -451,7 +460,7 @@ async function spawnAsyncPrint(cmd, arg, opt) {
   });
 }
 
-async function runBpanel(cmd, arg, opt) {
+async function runBpanel(cmd, arg, opt, DEBUG) {
   return new Promise ((resolve, reject) => {
     const proc = child_process.spawn(cmd, arg, opt);
 
@@ -472,11 +481,17 @@ async function runBpanel(cmd, arg, opt) {
     };
 
     proc.stdout.on('data', (data) => {
-      parseOutput(data.toString());
+      if (DEBUG)
+        console.log(data.toString());
+      else
+        parseOutput(data.toString());
     });
 
     proc.stderr.on('data', (data) => {
-      parseOutput(data.toString());
+      if (DEBUG)
+        console.log(data.toString());
+      else
+        parseOutput(data.toString());
     });
   });
 }
