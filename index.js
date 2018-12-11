@@ -444,6 +444,7 @@ Your ${options.library} server is running.
 If you want to connect to bPanel manually you'll need these keys:
 api-key: ${libOpts.api_key}
 wallet-api-key: ${walletOpts.api_key}
+wallet-token: ${walletOpts.token}
     `;
   }
 
