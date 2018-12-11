@@ -8,7 +8,7 @@ const os = require('os');
 const child_process = require('child_process');
 const inquirer = require('inquirer');
 
-const DEBUG = true;
+const DEBUG = false;
 
 const libs = {
   bcoin: {
@@ -25,6 +25,9 @@ const libs = {
   },
   bpanel: {
     repo: 'https://github.com/bpanel-org/bpanel'
+  },
+  bpanelcli: {
+    repo: 'https://github.com/bpanel-org/bpanel-cli'
   },
   bmultisig: {
     repo: 'https://github.com/bcoin-org/bmultisig'
@@ -123,6 +126,7 @@ let options = {};
     network: options.network,
     wallet_auth: true
   };
+  walletOpts.token = walletOpts.admin_token;
 
   const conflict =
     (options.library === 'bcoin' && 
@@ -295,6 +299,22 @@ let options = {};
         {cwd: Path.join(pathLibs, 'bpanel')}
       );
     }
+
+    console.log('\n***\nDownloading from GitHub: bpanel-cli...\n***\n');
+
+    await spawnAsyncPrint(
+      'git',
+      ['clone', libs['bpanelcli'].repo],
+      {cwd: pathLibs}
+    );
+
+    if (libs['bpanelcli'].commit) {
+      await spawnAsyncPrint(
+        'git',
+        ['checkout', libs['bpanelcli'].commit],
+        {cwd: Path.join(pathLibs, 'bpanel-cli')}
+      );
+    }
   }
 
   /**
@@ -332,6 +352,14 @@ let options = {};
       'npm',
       ['install'],
       {cwd: Path.join(pathLibs, 'bpanel')}
+    );
+
+   console.log('\n***\nInstalling: bpanel-cli...\n***\n');
+
+    await spawnAsyncPrint(
+      'npm',
+      ['install'],
+      {cwd: Path.join(pathLibs, 'bpanel-cli')}
     );
   }
 
@@ -396,14 +424,73 @@ let options = {};
 ***
 Okay! bPanel is just about ready.
 Go to http://localhost:5000 in your browser.
-You may need reload the page a few more times in the next minute or so...
-
-Thanks for using EZ installer!
+You may need reload the page a few more times in the next minute or so while
+the last few plugins are rendering.
 
 This script will dump some environment variables into this shell:
+  $BCOINCLI
+  $BCASHCLI
+  $HSDCLI
+  $BCOINWALLET
+  $BCASHWALLET
+  $HSDWALLET
+  $BPANELCLI
+  exit
+
+examples:
+
+(list all bpanel plugins)
+$BPANELCLI l
+
+(stop the bcoin node server)
+$BCOINCLI rpc stop
+
+(stop bpanel server)
+killall bpanel
+
+You can reconfigure a client by stopping it first then rerunning this script:
+node EZ_bcoin_installer.js
 ***
   `);
-  process.exit();
+
+  if (DEBUG) {
+    process.exit();
+  } else {
+    // keep user in a shell with easy commands
+    child_process.spawnSync(
+      'bash',
+      [],
+      {
+        stdio: 'inherit',
+        env: {
+          BCOINCLI:
+            Path.join(pathLibs, 'bcoin/node_modules/bclient/bin/bcoin-cli') +
+            ' ' + '--prefix=' + Path.join(pathData, 'bcoin'),
+          BCASHCLI:
+            Path.join(pathLibs, 'bcash/node_modules/bclient/bin/bcoin-cli') +
+            ' ' + '--prefix=' + Path.join(pathData, 'bcash'),
+          HSDCLI:
+            Path.join(pathLibs, 'hsd/node_modules/hs-client/bin/hsd-cli') +
+            ' ' + '--prefix=' + Path.join(pathData, 'hsd'),
+          BCOINWALLET:
+            Path.join(pathLibs, 'bcoin/node_modules/bclient/bin/bwallet-cli') +
+            ' ' + '--prefix=' + pathWallet,
+          BCASHWALLET:
+            Path.join(pathLibs, 'bcash/node_modules/bclient/bin/bwallet-cli') +
+            ' ' + '--prefix=' + pathWallet,
+          HSDWALLET:
+            Path.join(pathLibs, 'hsd/node_modules/bclient/bin/hsw-cli') +
+            ' ' + '--prefix=' + pathWallet,
+          BPANELCLI:
+            'node' +
+            Path.join(pathLibs, 'bpanel-cli/dist/program.js') +
+            ' ' + '--prefix=' + Path.join(pathData, 'bcoin')
+        }
+      }
+    );
+    console.log('Bye! Thanks for using EZ installer!');
+    process.exit();
+  }
 })();
 
 
