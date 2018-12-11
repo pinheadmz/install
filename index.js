@@ -41,7 +41,6 @@ const bpanelConfig = {
     "@bpanel/price-widget",
     "@bpanel/peers-widget",
     "@bpanel/recent-blocks",
-    "@bpanel/bwallet",
     "@bpanel/connection-manager"
   ],
   localPlugins: []
@@ -223,6 +222,9 @@ let options = {};
     // BPANEL conf file
     if (options.network === 'regtest' || options.network === 'simnet')
       bpanelConfig.plugins.push('@bpanel/simple-mining');
+
+    if (options.wallet !== 'none')
+      bpanelConfig.plugins.push('@bpanel/bwallet');
 
     const bpanelConfString =
       'module.exports = ' +
