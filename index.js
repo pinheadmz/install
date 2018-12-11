@@ -482,9 +482,9 @@ node EZ_bcoin_installer.js
             Path.join(pathLibs, 'hsd/node_modules/bclient/bin/hsw-cli') +
             ' ' + '--prefix=' + pathWallet,
           BPANELCLI:
-            'node' +
+            'node ' +
             Path.join(pathLibs, 'bpanel-cli/dist/program.js') +
-            ' ' + '--prefix=' + Path.join(pathData, 'bcoin')
+            ' ' + '--prefix=' + Path.join(pathData, 'bpanel')
         }
       }
     );
