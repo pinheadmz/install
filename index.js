@@ -7,8 +7,19 @@ const fs = require('fs');
 const os = require('os');
 const child_process = require('child_process');
 const inquirer = require('inquirer');
+const { test_cert, test_key } = require('./lib/test_keys');
+const {
+  path,
+  lib,
+  node,
+  bpanel
+} = require('./lib/survey');
 
-const DEBUG = false;
+// when false, hides bpanel output and enters shell after installation
+const DEBUG = true;
+
+// when true, uses included SSL keys instead of generating new
+const TEST = true;
 
 const libs = {
   bcoin: {
@@ -49,13 +60,6 @@ const bpanelConfig = {
 // plugins added to bpanel config.js based on wallet / network
 const walletPlugin = '@bpanel/bwallet';
 const minerPlugin = '@bpanel/simple-mining';
-
-const {
-  path,
-  lib,
-  node,
-  bpanel
-} = require('./lib/survey');
 
 let options = {};
 (async () => {
@@ -233,6 +237,18 @@ let options = {};
 
     if (options.wallet !== 'none')
       bpanelConfig.plugins.push(walletPlugin);
+
+    // SSL stuff for ledger
+    if (TEST) {
+      const pathKey = Path.join(pathBpanel, 'test_key.key');
+      const pathCrt = Path.join(pathBpanel, 'test_cert.crt');
+      fs.writeFileSync(pathCrt, test_cert);
+      fs.writeFileSync(pathKey, test_key);
+
+      bpanelConfig.ssl = true;
+      bpanelConfig.sslkey = pathKey;
+      bpanelConfig.sslcert = pathCrt;
+    }
 
     const bpanelConfString =
       'module.exports = ' +
@@ -434,7 +450,17 @@ let options = {};
   if (options.bpanel){
     top += `
 Okay! bPanel is just about ready.
-Go to http://localhost:5000 in your browser.
+Open up your browser to:
+
+  http://localhost:5000
+
+or:
+
+  https://localhost:5001
+
+...if you are using a hardware wallet and SSL keys. You may have to "accept"
+the self-signed certificate included in bPanel.
+
 You may need reload the page a few more times in the next minute or so while
 the last few plugins are rendering.
     `;
