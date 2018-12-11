@@ -205,7 +205,7 @@ let options = {};
       wallet_token: walletOpts.admin_token,
       network: libOpts.network,
       chain: libs[options.library].chain,
-      wallet: options.wallet === 'bwallet',
+      wallet: options.wallet !== 'none',
       multisig: options.wallet === 'bmultisig'
     };
 
