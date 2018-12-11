@@ -46,6 +46,12 @@ const bpanelConfig = {
   localPlugins: []
 };
 
+// bcoin+simnet only, added to node bcoin.conf
+const simnetPeer = '45.56.83.99:18556';
+// plugins added to bpanel config.js based on wallet / network
+const walletPlugin = '@bpanel/bwallet';
+const minerPlugin = '@bpanel/simple-mining';
+
 const {
   path,
   menu,
@@ -118,6 +124,9 @@ let options = {};
     prune: options.node === 'prune',
     spv: options.node === 'SPV'
   };
+  if (options.library === 'bcoin' && options.network === 'simnet')
+    libOpts.nodes = simnetPeer;
+
   const walletOpts = {
     api_key: crypto.randomBytes(32).toString('hex'),
     admin_token: crypto.randomBytes(32).toString('hex'),
@@ -221,10 +230,10 @@ let options = {};
 
     // BPANEL conf file
     if (options.network === 'regtest' || options.network === 'simnet')
-      bpanelConfig.plugins.push('@bpanel/simple-mining');
+      bpanelConfig.plugins.push(minerPlugin);
 
     if (options.wallet !== 'none')
-      bpanelConfig.plugins.push('@bpanel/bwallet');
+      bpanelConfig.plugins.push(walletPlugin);
 
     const bpanelConfString =
       'module.exports = ' +
