@@ -46,15 +46,12 @@ const bpanelConfig = {
   localPlugins: []
 };
 
-// bcoin+simnet only, added to node bcoin.conf
-const simnetPeer = '45.56.83.99:18556';
 // plugins added to bpanel config.js based on wallet / network
 const walletPlugin = '@bpanel/bwallet';
 const minerPlugin = '@bpanel/simple-mining';
 
 const {
   path,
-  menu,
   lib,
   node,
   bpanel
@@ -84,28 +81,25 @@ let options = {};
   makeIfNone(pathData);
 
   options.installedLibs = listDir(pathLibs);
-/*
-  // Something is installed or running, awhat are we doing now?
-  if (options.installedLibs.length > 0 || options.running.length > 0) {
 
-    console.log('\n***\nInstalled: ' + JSON.stringify(options.installedLibs));
-    console.log('Running: ' + JSON.stringify(options.running) + '\n***\n');
-
-    const runnable = [];
-    for (const proc of options.installedLibs) {
-      if (options.running.indexOf(proc) === -1)
-        runnable.push(proc);
-    }
-
-    const action = await inquirer.prompt(menu());
-
-  }
-*/
   const libAnswers = await inquirer.prompt(lib(options));
   options = { ...options, ...libAnswers };
 
   const nodeAnswers = await inquirer.prompt(node(options));
   options = { ...options, ...nodeAnswers };
+
+  if (options.network === 'simnet'){
+    const simnetAnswers = await inquirer.prompt(
+      [
+        {
+          type: 'input',
+          name: 'peers',
+          message: 'Enter peer addresses (comma-separated list): '
+        }
+      ]
+    );
+    options = { ...options, ...simnetAnswers };
+  }
 
   const bpanelAnswers = await inquirer.prompt(bpanel(options));
   options = { ...options, ...bpanelAnswers };
@@ -124,8 +118,9 @@ let options = {};
     prune: options.node === 'prune',
     spv: options.node === 'SPV'
   };
-  if (options.library === 'bcoin' && options.network === 'simnet')
-    libOpts.nodes = simnetPeer;
+
+  if (options.network === 'simnet')
+    libOpts.nodes = options.peers;
 
   const walletOpts = {
     api_key: crypto.randomBytes(32).toString('hex'),
