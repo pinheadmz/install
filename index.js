@@ -224,8 +224,12 @@ let options = {};
     );
 
     // BPANEL conf file
-    if (options.network === 'regtest' || options.network === 'simnet')
+    if (
+      (options.network === 'regtest' || options.network === 'simnet') &&
+      options.node !== 'SPV'
+    ) {
       bpanelConfig.plugins.push(minerPlugin);
+    }
 
     if (options.wallet !== 'none')
       bpanelConfig.plugins.push(walletPlugin);
@@ -426,13 +430,25 @@ let options = {};
     );
   }
 
-  console.log(`
-***
+  let top = '***';
+  if (options.bpanel){
+    top += `
 Okay! bPanel is just about ready.
 Go to http://localhost:5000 in your browser.
 You may need reload the page a few more times in the next minute or so while
 the last few plugins are rendering.
+    `;
+  } else {
+    top += `
+Your ${options.library} server is running.
+If you want to connect to bPanel manually you'll need these keys:
+api-key: ${libOpts.api_key}
+wallet-api-key: ${walletOpts.api_key}
+    `;
+  }
 
+
+  console.log(top + `
 This script will dump some environment variables into this shell:
   $BCOINCLI
   $BCASHCLI
