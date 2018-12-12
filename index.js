@@ -16,7 +16,7 @@ const {
 } = require('./lib/survey');
 
 // when false, hides bpanel output and enters shell after installation
-const DEBUG = true;
+const DEBUG = false;
 
 // when true, uses included SSL keys instead of generating new
 const TEST = true;
@@ -33,6 +33,7 @@ const libs = {
   hsd: {
     repo: 'https://github.com/handshake-org/hsd',
     chain: 'handshake',
+    commit: '7f6e6ba277f43011fa873338fa693e85d4e3a907'
   },
   bpanel: {
     repo: 'https://github.com/bpanel-org/bpanel'
