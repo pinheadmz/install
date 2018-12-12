@@ -500,7 +500,9 @@ $BCOINCLI rpc stop
 (stop bpanel server)
 killall bpanel
 
-You can reconfigure a client by stopping it first then rerunning this script:
+You can reconfigure a client by stopping it first, then exiting and rerunning this script:
+$BCOINCLI rpc stop
+exit
 node EZ_bcoin_installer.js
 ***
   `);
