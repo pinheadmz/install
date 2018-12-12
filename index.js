@@ -51,7 +51,6 @@ const bpanelConfig = {
   plugins: [
     "@bpanel/genesis-theme",
     "@bpanel/price-widget",
-    "@bpanel/peers-widget",
     "@bpanel/recent-blocks",
     "@bpanel/connection-manager"
   ],
