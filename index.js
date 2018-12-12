@@ -223,7 +223,10 @@ let options = {};
 
     const bpanelClientConfString = configFileFromObject(bPanelOpts);
     fs.writeFileSync(
-      Path.join(pathBpanelClients, options.library + '.conf'),
+      Path.join(
+        pathBpanelClients,
+        options.library + '_' + options.network + '.conf'
+      ),
       bpanelClientConfString
     );
 
