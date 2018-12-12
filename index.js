@@ -8,6 +8,7 @@ const os = require('os');
 const child_process = require('child_process');
 const inquirer = require('inquirer');
 const { test_cert, test_key } = require('./lib/test_keys');
+const {preinstall} = require('./lib/preinstall');
 const {
   path,
   lib,
@@ -60,6 +61,9 @@ const bpanelConfig = {
 // plugins added to bpanel config.js based on wallet / network
 const walletPlugin = '@bpanel/bwallet';
 const minerPlugin = '@bpanel/simple-mining';
+
+// check npm and node versions
+preinstall();
 
 let options = {};
 (async () => {
