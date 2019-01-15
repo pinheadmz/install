@@ -33,7 +33,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run build; git add dist/bundle.js"
+      "pre-commit": "npm run build; chmod a+x dist/b-installer.js; git add dist/b-installer.js"
     }
   }
 }
